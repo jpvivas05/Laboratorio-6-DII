@@ -16,12 +16,12 @@
 //******************************************/
 // Definiciones
 //******************************************/
-/*#define rs 14
-#define en 12
-#define d4 19
-#define d5 18
-#define d6 5
-#define d7 17*/
+#define rs 32
+#define en 25
+#define d4 26
+#define d5 27
+#define d6 14
+#define d7 13
 
 #define pot1 36
 #define pot2 39
@@ -40,14 +40,16 @@
 // Prototipos de funciones
 //******************************************/
 void leerSerial(void);
-void leerADC(int pot, int canal);
+void leerADC();
+void leerADC2();
 void initleds(void);
 void initPWM(void);
 //******************************************/
 // Variables globales
 //******************************************/
-//LiquidCrystal lcd(rs,en,d4,d5,d6,d7);
-
+LiquidCrystal lcd(rs,en,d4,d5,d6,d7);
+uint8_t val = 0;
+uint8_t val2 = 0;
 uint8_t contadorAzul = 255; // contador de 8 bits Azul
 //******************************************/
 // ISRs Rutinas de Interrupcion
@@ -57,10 +59,11 @@ uint8_t contadorAzul = 255; // contador de 8 bits Azul
 //******************************************/
 void setup() {
   Serial.begin(115200);
-
-  /*lcd.begin(16,2);
+  lcd.begin(16,2);
   lcd.setCursor(0,0);
-  lcd.print("Todo bien!");*/
+  lcd.print("Todo bien!");
+  delay(500);
+  lcd.clear();
   initleds();
   initPWM();
 }
@@ -68,16 +71,24 @@ void setup() {
 // Loop Principal
 //******************************************/
 void loop() {
-  Serial.print("Potenciómetro 1:");
-  leerADC(pot1, canalR);
-  delay(500);
-  Serial.print("Potenciómetro 2:");
-  leerADC(pot2, canalV);
-  delay(500);
-  Serial.print("Contador = ");
+  lcd.setCursor(0,0);
+  lcd.print("Rojo  Verde Azul");
+  Serial.print("Potenciómetro Rojo:");
+  leerADC();
+  lcd.setCursor(0,1);
+  lcd.print(val);
+  delay(10);
+  Serial.print("Potenciómetro Verde:");
+  leerADC2();
+  lcd.setCursor(6,1);
+  lcd.print(val2);
+  delay(10);
+  Serial.print("Contador Azul:");
   leerSerial();
-  Serial.println(contadorAzul);
-  delay(500);
+  lcd.setCursor(12,1);
+  lcd.print(contadorAzul);
+  delay(100);
+  lcd.clear();
 }
 //******************************************/
 // Otras funciones
@@ -96,24 +107,39 @@ void leerSerial() {
       }
     }
   }
+  Serial.println(contadorAzul);
   ledcWrite(canalA, contadorAzul);
 }
-void leerADC(int pot, int canal) {
+void leerADC() {
   const int N = 10;
   long suma = 0;
 
   for (int i = 0; i < N; i++) {
-    suma += analogRead(pot);
+    suma += analogRead(pot1);
     delay(1);
   }
-  int poten = suma / N;                // promedio (0..4095)
-  uint8_t val = map(poten, 0, 4095, 0, 255); // mapea a 8 bits
+  int poten = suma / N;                // promedio
+  val = map(poten, 0, 4095, 0, 255); // mapea a 8 bits
 
-  ledcWrite(canal, val);
+  ledcWrite(canalR, val);
 
   Serial.println(val);
 }
+void leerADC2() {
+  const int N2 = 10;
+  long suma2 = 0;
 
+  for (int i = 0; i < N2; i++) {
+    suma2 += analogRead(pot2);
+    delay(1);
+  }
+  int poten2 = suma2 / N2;                // promedio
+  val2 = map(poten2, 0, 4095, 0, 255); // mapea a 8 bits
+
+  ledcWrite(canalV, val2);
+
+  Serial.println(val);
+}
 void initPWM(void){
   //    Asignar canales
   ledcSetup(canalR, freqPWM, resPWM);
